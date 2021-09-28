@@ -181,7 +181,6 @@ export default {
       this.currentOpenItem = item
     },
     closeEditItem () {
-      console.log('entrei aqui closeEditItem')
       this.isOpenItem = false
       this.currentOpenItem = {}
     },
