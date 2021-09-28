@@ -196,7 +196,7 @@ export default {
         message += `*${category.label.pt_BR}:*\n\n`
         this.filteredMeals(category.id).forEach((item) => {
           message += `*${item.quantity}x ${item.meal.label}* \n`
-          if (item.comment) { message += `_Obs: ${item.comment.trim()}_ \n` }
+          if (item.comment) { message += `_Obs: ${item.comment.trim()}_ \n\n` }
           if (!item.comment) { message += '' }
         })
         message += '-----------------------------'
