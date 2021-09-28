@@ -30,22 +30,85 @@
           </div>
         </v-card-title>
         <v-card-text class="pa-0">
-          <div class="cart-category-item__title pb-4 pt-4">
-            Combos
+          <div
+            v-for="category in categories"
+            :key="category.id"
+          >
+            <div v-if="checkCartCategory(category.id)">
+              <div class="cart-category-item__title pb-4 pt-4">
+                {{ category.label.pt_BR }}
+              </div>
+              <div
+                v-for="(item, i) in filteredMeals(category.id)"
+                :key="item.id"
+              >
+                <div class="row pl-4 pr-4 pt-0 pb-0 pr-0 ma-0">
+                  <p class="cart-meal-item__detail col-2 pb-0 pr-0 mb-2 align-self-center">
+                    {{ item.quantity }}x
+                  </p>
+                  <p class="cart-meal-item__detail col-7 pb-0 pl-0 pr-0 mb-2 align-self-center">
+                    {{ item.meal.label }}
+                  </p>
+                  <div class="cart-meal-item__detail__price col-3 pb-0 pr-2 mb-2 align-self-center">
+                    R$ {{ formatPrice(calcItemPrice(item.quantity, item.meal.price)) }}
+                  <!--                    <v-btn-->
+                  <!--                      v-if="$vuetify.breakpoint.mobile"-->
+                  <!--                      class="cart-meal-item__detail__btn pa-0 ml-2"-->
+                  <!--                      text-->
+                  <!--                      icon-->
+                  <!--                      color="red"-->
+                  <!--                      @click="sheet = true"-->
+                  <!--                    >-->
+                  <!--                      <v-icon>mdi-dots-vertical</v-icon>-->
+                  <!--                    </v-btn>-->
+                  </div>
+                </div>
+                <div v-if="item.comment" class="row pl-4 pr-4 pt-0 pb-0 pr-0 ma-0">
+                  <p class="cart-meal-item__detail__comment col-12 pt-0 pb-0 pr-2 mb-1">
+                    Obs.: {{ item.comment }}
+                  </p>
+                </div>
+                <div
+                  class="cart-meal-item__actions row pl-4 pr-4 pt-0 pb-0 ma-0"
+                >
+                  <v-btn
+                    small
+                    color="red"
+                    outlined
+                    class="cart-meal-item__actions__btn"
+                    @click="openEditItem(item)"
+                  >
+                    Editar
+                  </v-btn>
+                  <v-btn
+                    small
+                    color="red"
+                    outlined
+                    class="cart-meal-item__actions__btn ma-0"
+                    @click="dispatchRemoveCartItem(item)"
+                  >
+                    Remover
+                  </v-btn>
+                </div>
+                <v-divider v-if="i !== (filteredMeals(category.id).length - 1)" />
+              </div>
+            </div>
           </div>
-          <p>R$ {{ totalPrice }}</p>
-          <div class="cart-category-item__title pb-4 pt-4">
-            Marmitas
+          <v-divider />
+          <div class="cart-summary pl-4 pr-4 pt-3 pb-5">
+            <div class="cart-summary__total_amount pl-3 pr-2">
+              <span>Subtotal</span>
+              <span>R$ {{ formatPrice(cartTotalPrice) }}</span>
+            </div>
+            <div class="cart-summary__total_delivery pl-3 pr-2">
+              <span>Taxa de entrega</span>
+              <span>Grátis</span>
+            </div>
+            <div class="cart-summary__total_cost pl-3 pr-2">
+              <span>Total</span>
+              <span>R$ {{ formatPrice(cartTotalPrice) }}</span>
+            </div>
           </div>
-          <p>R$ {{ totalPrice }}</p>
-          <div class="cart-category-item__title pb-4 pt-4">
-            Caldos
-          </div>
-          <p>R$ {{ totalPrice }}</p>
-          <div class="cart-category-item__title pb-4 pt-4">
-            Empadões
-          </div>
-          <p>R$ {{ totalPrice }}</p>
         </v-card-text>
         <v-card-actions class="cart-actions__container pa-4">
           <div class="cart-add">
@@ -55,6 +118,7 @@
               dark
               min-width="100%"
               class="cart-add__btn text-capitalize"
+              @click="sendMessage"
             >
               FINALIZAR PEDIDO
             </v-btn>
@@ -62,35 +126,87 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <ItemDialog
+      :is-open-item="isOpenItem"
+      :is-editing="true"
+      :item="currentOpenItem"
+      @closeItem="closeEditItem"
+    />
   </div>
 </template>
 
 <script>
-import { mapState } from 'vuex'
+import { mapActions, mapGetters, mapState } from 'vuex'
+import ItemDialog from '@/components/modules/items/ItemDialog.vue'
 
 export default {
   name: 'ModuleCart',
+  components: {
+    ItemDialog
+  },
   props: {
     isCartVisible: Boolean
   },
   data () {
     return {
+      isOpenItem: false,
+      currentOpenItem: {},
+      sheet: false
     }
   },
   computed: {
-    ...mapState('cart', ['items']),
-    totalPrice () {
-      let totalPrice = 0
-      this.items.forEach((item) => { totalPrice = Number(totalPrice) + Number(item.priceTotal) })
-      return totalPrice
-    }
+    ...mapState('cart', ['items', 'cartTotalPrice']),
+    // ...mapGetters('cart', ['cartTotalPrice']),
+    ...mapGetters('meal', ['categories'])
   },
   methods: {
+    ...mapActions('cart', ['dispatchRemoveCartItem']),
     lookItems () {
-      console.log('cart items', this.items, this.totalPrice)
+      console.log('cart items', this.items, this.cartTotalPrice)
+    },
+    filteredMeals (categoryId) {
+      return this.items.filter(item => item.meal.category === categoryId)
     },
     closeCart () {
       this.$emit('closeCart')
+    },
+    checkCartCategory (categoryId) {
+      return this.items.some(item => categoryId === item.meal.category)
+    },
+    formatPrice (price) {
+      return parseFloat(price).toFixed(2)
+    },
+    openEditItem (item) {
+      this.isOpenItem = true
+      this.currentOpenItem = item
+    },
+    closeEditItem () {
+      console.log('entrei aqui closeEditItem')
+      this.isOpenItem = false
+      this.currentOpenItem = {}
+    },
+    calcItemPrice (quantity, price) {
+      return quantity * price
+    },
+    sendMessage () {
+      let message = 'Olá, segue o meu pedido: \n' +
+        '-----------------------------'
+      const phone = '5548'
+      this.categories.forEach((category) => {
+        message += '\n'
+        message += `*${category.label.pt_BR}:*\n\n`
+        this.filteredMeals(category.id).forEach((item) => {
+          message += `*${item.quantity}x ${item.meal.label}* \n`
+          if (item.comment) { message += `_Obs: ${item.comment.trim()}_ \n` }
+          if (!item.comment) { message += '' }
+        })
+        message += '-----------------------------'
+      })
+      message += `\n\nSubtotal: R$${this.formatPrice(this.cartTotalPrice)}\n`
+      message += 'Frete: Grátis\n'
+      message += `Total: R$${this.formatPrice(this.cartTotalPrice)}\n`
+      message = window.encodeURIComponent(message)
+      return window.open('https://api.whatsapp.com/send?phone=' + phone + '&text=' + message, '_blank')
     }
   }
 }
@@ -138,6 +254,63 @@ export default {
           font-size: 1rem;
           line-height: 1.5rem;
         }
+      }
+    }
+  }
+  &-meal {
+    &-item {
+      &__detail {
+        color: #272727;
+        font-size: 0.90rem;
+        font-weight: normal;
+        line-height: 1rem;
+        &__comment {
+          color: #a6a5a5;
+          font-weight: 300;
+          font-size: 0.9375rem;
+        }
+        &__price {
+          display: flex;
+          justify-content: end;
+          color: #272727;
+          font-weight: normal;
+          line-height: 1rem;
+        }
+        &__btn {
+          width: 0 !important;
+          height: 0 !important;
+          margin-top: 7px;
+        }
+      }
+      &__actions {
+        &__btn {
+          border: 0;
+          text-transform: capitalize;
+        }
+      }
+    }
+  }
+  &-summary {
+    &__total {
+      &_amount {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9375rem;
+        padding: 0.2rem;
+      }
+      &_delivery {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9375rem;
+      }
+      &_cost {
+        display: flex;
+        justify-content: space-between;
+        font-size: 1.125rem;
+        font-weight: bold;
+        line-height: 22px;
+        margin-top: 5px;
+        color: black;
       }
     }
   }

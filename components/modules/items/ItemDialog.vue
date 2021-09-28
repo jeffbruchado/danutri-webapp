@@ -1,192 +1,130 @@
 <template>
-  <div class="lunchboxes-menu fill-height">
-    <div class="lunchboxes-menu-banner">
-      <div
-        class="lunchboxes-menu-banner__wrapper"
-        style="background-image: url(https://cdn.vuetifyjs.com/images/parallax/material2.jpg);"
-      />
-    </div>
-    <div class="pa-3 pa-sm-3 pa-md-8 pa-lg-8">
-      <div
-        v-for="category in categories"
-        :key="category.id"
-        class="mb-5"
-      >
-        <div class="lunchboxes-menu-item__title mb-2 pt-5">
-          {{ category.label.pt_BR }}
-        </div>
-        <v-row dense class="lunchboxes-menu-item__row">
-          <v-col
-            v-for="meal in filteredMeals(category.id)"
-            :key="meal.id"
-            order
-            sm="12"
-            md="6"
-            lg="6"
-            class="pl-lg-2 pr-lg-2 pb-lg-0 pb-0"
+  <v-dialog
+    :value="isOpenItem"
+    :fullscreen="$vuetify.breakpoint.mobile && !$vuetify.breakpoint.sm"
+    scrollable
+    :transition="$vuetify.breakpoint.mobile && !$vuetify.breakpoint.sm ? 'dialog-bottom-transition' : 'scale-transition'"
+    max-width="1024px"
+  >
+    <v-card>
+      <v-card-title flat class="pl-4 pr-4 pb-1">
+        <v-btn
+          icon
+          color="red"
+          class="col-1"
+          @click="closeItem"
+        >
+          <v-icon
+            x-large
+            dense
           >
-            <v-hover
-              v-slot="{ hover }"
+            {{ isEditing ? 'mdi-chevron-down' : 'mdi-chevron-left' }}
+          </v-icon>
+        </v-btn>
+        <div class="meal-item-nav-header__title text-wrap text-break col-11">
+          {{ currentOpenMeal.label }}
+        </div>
+      </v-card-title>
+      <v-img
+        class="white--text align-end"
+        height="200px"
+        src="https://cdn.vuetifyjs.com/images/cards/docks.jpg"
+      />
+      <v-card-text class="pa-0">
+        <v-card-title
+          class="meal-item__title mb-3 text-break"
+        >
+          {{ currentOpenMeal.label }}
+        </v-card-title>
+        <v-card-subtitle
+          class="text-break pb-0"
+        >
+          {{ currentOpenMeal.description }}
+        </v-card-subtitle>
+        <v-card-subtitle class="pb-2">
+          <span class="meal-item__price pa-0">
+            <span class="meal-item__price--discount">
+              R${{ parseFloat(currentOpenMeal.price).toFixed(2) }}
+            </span>
+          </span>
+        </v-card-subtitle>
+        <div class="pl-4 pr-4 pt-4">
+          <div class="meal-item__textarea__header">
+            <label
+              :for="currentOpenMeal.id"
+              class="meal-item__textarea__label"
             >
-              <v-card
-                v-if="meal.category === category.id"
-                :elevation="hover ? 2 : 0"
-                class="meal-item__button mb-lg-2 transition-swing"
-                outlined
-                @click="openMeal(meal)"
-              >
-                <v-list-item three-line>
-                  <v-list-item-content>
-                    <v-list-item-title class="meal-item__title mb-1 text-wrap">
-                      {{ meal.label }}
-                    </v-list-item-title>
-                    <v-list-item-subtitle class="">
-                      {{ meal.description }}
-                    </v-list-item-subtitle>
-                    <v-list-item-subtitle class="meal-item__serves">
-                      Serve 1 pessoa
-                    </v-list-item-subtitle>
-                  </v-list-item-content>
-
-                  <v-list-item-avatar
-                    tile
-                    size="80"
-                    color="grey"
-                  />
-                </v-list-item>
-                <v-card-actions class="pa-0">
-                  <span class="meal-item__price">
-                    <span class="meal-item__price--discount">
-                      R${{ parseFloat(meal.price).toFixed(2) }}
-                    </span>
-                  </span>
-                </v-card-actions>
-              </v-card>
-            </v-hover>
-          </v-col>
-        </v-row>
-      </div>
-    </div>
-    <v-dialog
-      v-model="isOpenMeal"
-      :fullscreen="$vuetify.breakpoint.mobile && !$vuetify.breakpoint.sm"
-      scrollable
-      :transition="$vuetify.breakpoint.mobile && !$vuetify.breakpoint.sm ? 'dialog-bottom-transition' : 'scale-transition'"
-      max-width="1024px"
-    >
-      <v-card>
-        <v-card-title flat class="pl-4 pr-4 pb-1">
+              Algum comentário?
+            </label>
+            <span>{{ currentOpenMealComment }} / 140</span>
+          </div>
+          <v-textarea
+            :id="currentOpenMeal.id"
+            v-model="form.comment"
+            class="meal-item__textarea"
+            auto-grow
+            outlined
+            placeholder="Ex: tirar a cebola, maionese à parte etc."
+            rows="3"
+            maxlength="140"
+          />
+        </div>
+      </v-card-text>
+      <v-card-actions class="meal-item-actions__container pa-4">
+        <div class="meal-item-counter justify-start align-center">
           <v-btn
             icon
             color="red"
-            class="col-1"
-            @click="closeMeal"
+            class="meal-item-counter__btn"
+            :disabled="form.itemQuantityCounter === 1"
+            @click="form.itemQuantityCounter--"
           >
-            <v-icon
-              x-large
-              dense
-            >
-              mdi-chevron-left
-            </v-icon>
+            <v-icon>mdi-minus</v-icon>
           </v-btn>
-          <div class="meal-item-nav-header__title text-wrap text-break col-11">
-            {{ currentOpenMeal.label }}
+          <div class="meal-item-counter__value">
+            {{ form.itemQuantityCounter }}
           </div>
-        </v-card-title>
-        <v-img
-          class="white--text align-end"
-          height="200px"
-          src="https://cdn.vuetifyjs.com/images/cards/docks.jpg"
-        />
-        <v-card-text class="pa-0">
-          <v-card-title
-            class="meal-item__title mb-3 text-break"
+          <v-btn
+            icon
+            color="red"
+            class="meal-item-counter__btn"
+            @click="form.itemQuantityCounter++"
           >
-            {{ currentOpenMeal.label }}
-          </v-card-title>
-          <v-card-subtitle
-            class="text-break pb-0"
+            <v-icon>mdi-plus</v-icon>
+          </v-btn>
+        </div>
+        <div class="meal-item-add">
+          <v-btn
+            large
+            color="red"
+            dark
+            min-width="100%"
+            class="meal-item-add__btn text-capitalize"
+            :loading="form.loading"
+            @click="isEditing ? editCartItem() : addToCart()"
           >
-            {{ currentOpenMeal.description }}
-          </v-card-subtitle>
-          <v-card-subtitle class="pb-2">
-            <span class="meal-item__price pa-0">
-              <span class="meal-item__price--discount">
-                R${{ parseFloat(currentOpenMeal.price).toFixed(2) }}
-              </span>
-            </span>
-          </v-card-subtitle>
-          <div class="pl-4 pr-4 pt-4">
-            <div class="meal-item__textarea__header">
-              <label
-                :for="currentOpenMeal.id"
-                class="meal-item__textarea__label"
-              >
-                Algum comentário?
-              </label>
-              <span>{{ currentOpenMealComment }} / 140</span>
-            </div>
-            <v-textarea
-              :id="currentOpenMeal.id"
-              v-model="form.comment"
-              class="meal-item__textarea"
-              auto-grow
-              outlined
-              placeholder="Ex: tirar a cebola, maionese à parte etc."
-              rows="3"
-              maxlength="140"
-            />
-          </div>
-        </v-card-text>
-        <v-card-actions class="meal-item-actions__container pa-4">
-          <div class="meal-item-counter justify-start align-center">
-            <v-btn
-              icon
-              color="red"
-              class="meal-item-counter__btn"
-              :disabled="form.mealAddToCartCounter === 1"
-              @click="form.mealAddToCartCounter--"
-            >
-              <v-icon>mdi-minus</v-icon>
-            </v-btn>
-            <div class="meal-item-counter__value">
-              {{ form.mealAddToCartCounter }}
-            </div>
-            <v-btn
-              icon
-              color="red"
-              class="meal-item-counter__btn"
-              @click="form.mealAddToCartCounter++"
-            >
-              <v-icon>mdi-plus</v-icon>
-            </v-btn>
-          </div>
-          <div class="meal-item-add">
-            <v-btn
-              large
-              color="red"
-              dark
-              min-width="100%"
-              class="meal-item-add__btn text-capitalize"
-              :loading="form.loading"
-              @click="addToCart"
-            >
-              <span>Adicionar</span>
-              <span>R${{ currentOpenMealPrice }}</span>
-            </v-btn>
-          </div>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </div>
+            <span>{{ isEditing ? 'Salvar Alterações' : 'Adicionar' }}</span>
+            <span>R${{ currentOpenMealPrice }}</span>
+          </v-btn>
+        </div>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 <script>
 import { mapActions, mapGetters } from 'vuex'
 export default {
-  name: 'Home',
+  name: 'ItemDialog',
+  props: {
+    isOpenItem: Boolean,
+    isEditing: Boolean,
+    item: {
+      type: Object,
+      default: () => {}
+    }
+  },
   data () {
     return {
-      isOpenMeal: false,
       currentOpenMeal: {},
       categories: [
         {
@@ -302,7 +240,7 @@ export default {
       ],
       form: {
         comment: '',
-        mealAddToCartCounter: 1,
+        itemQuantityCounter: 1,
         loading: false
       }
     }
@@ -312,46 +250,68 @@ export default {
       return this.form.comment ? this.form.comment.length : 0
     },
     currentOpenMealPrice () {
-      return parseFloat(this.currentOpenMeal.price * this.form.mealAddToCartCounter).toFixed(2)
+      return parseFloat(this.currentOpenMeal.price * this.form.itemQuantityCounter).toFixed(2)
     },
     ...mapGetters('cart', ['quantity'])
   },
+  watch: {
+    isOpenItem () {
+      if (this.isOpenItem) {
+        this.mountItemObj()
+        // eslint-disable-next-line no-console
+        console.log('currentOpenMeal', this.currentOpenMeal, this.form)
+      } else {
+        this.currentOpenMeal = {}
+      }
+    }
+  },
   methods: {
-    ...mapActions('cart', ['dispatchAddToCart']),
+    ...mapActions('cart', [
+      'dispatchAddToCart',
+      'dispatchEditCartItem'
+    ]),
     filteredMeals (categoryId) {
       return this.meals.filter(meal => meal.category === categoryId)
     },
-    openMeal (meal) {
+    closeItem () {
+      console.log('closeItem')
       this.form.loading = true
-      this.currentOpenMeal = meal
-      this.isOpenMeal = true
-      this.form.loading = false
-    },
-    closeMeal () {
-      this.form.loading = true
-      this.isOpenMeal = false
+      this.$emit('closeItem')
       this.clearMealForm()
+      this.form.loading = false
     },
     clearMealForm () {
       this.currentOpenMeal = {}
       this.form.comment = ''
-      this.form.mealAddToCartCounter = 1
+      this.form.itemQuantityCounter = 1
     },
-    generateUID () {
-      return Math.floor((1 + Math.random()) * 0x10000)
-        .toString(16)
-        .substring(1)
+    mountItemObj () {
+      // eslint-disable-next-line no-return-assign
+      if (!this.isEditing) { return this.currentOpenMeal = this.item.meal }
+      if (this.item.meal) { this.currentOpenMeal = this.item.meal }
+      if (this.item.comment) { this.form.comment = this.item.comment }
+      if (this.item.quantity) { this.form.itemQuantityCounter = this.item.quantity }
     },
     addToCart () {
       const item = {
-        id: this.generateUID(),
         meal: this.currentOpenMeal,
         comment: this.form.comment,
-        quantity: this.form.mealAddToCartCounter,
+        quantity: this.form.itemQuantityCounter,
         priceTotal: this.currentOpenMealPrice
       }
       this.dispatchAddToCart(item)
-      this.closeMeal()
+      this.closeItem()
+    },
+    editCartItem () {
+      const item = {
+        id: this.item.id,
+        meal: this.currentOpenMeal,
+        comment: this.form.comment,
+        quantity: this.form.itemQuantityCounter,
+        priceTotal: this.currentOpenMealPrice
+      }
+      this.dispatchEditCartItem(item)
+      this.closeItem()
     }
   }
 }
