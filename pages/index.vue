@@ -36,7 +36,7 @@
                 @click="openMeal(meal)"
               >
                 <v-list-item three-line>
-                  <v-list-item-content>
+                  <v-list-item-content style="max-width: 65%;">
                     <v-list-item-title class="meal-item__title mb-1 text-wrap">
                       {{ meal.label }}
                     </v-list-item-title>
@@ -50,9 +50,15 @@
 
                   <v-list-item-avatar
                     tile
-                    size="80"
+                    size="90"
                     color="grey"
-                  />
+                  >
+                    <img
+                      src="https://cdn.vuetifyjs.com/images/cards/docks.jpg"
+                      alt="John"
+                      style="border-radius: 4px;"
+                    >
+                  </v-list-item-avatar>
                 </v-list-item>
                 <v-card-actions class="pa-0">
                   <span class="meal-item__price">

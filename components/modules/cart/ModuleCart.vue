@@ -6,6 +6,7 @@
       :transition="$vuetify.breakpoint.mobile && !$vuetify.breakpoint.sm ? 'dialog-bottom-transition' : 'scale-transition'"
       max-width="1024px"
       :value="isCartVisible"
+      persistent
     >
       <v-card>
         <v-card-title flat class="pl-4 pr-4 pb-2 cart-nav-header">
@@ -19,7 +20,7 @@
               x-large
               dense
             >
-              mdi-chevron-down
+              {{ $vuetify.breakpoint.mobile && !$vuetify.breakpoint.sm ? 'mdi-chevron-down' : 'mdi-close' }}
             </v-icon>
           </v-btn>
           <div
@@ -29,7 +30,7 @@
             SUA SACOLA
           </div>
         </v-card-title>
-        <v-card-text class="pa-0">
+        <v-card-text v-if="items.length" class="pa-0">
           <div
             v-for="category in categories"
             :key="category.id"
@@ -110,8 +111,22 @@
             </div>
           </div>
         </v-card-text>
+        <v-card-text v-else class="flex">
+          <v-container fill-height>
+            <v-row align="center" justify="center">
+              <!--              <v-img-->
+              <!--                :src="require('@/static/sad.png')"-->
+              <!--                max-height="150"-->
+              <!--                max-width="150"-->
+              <!--              />-->
+              <p class="text-center pt-5">
+                Sua sacola está vazia
+              </p>
+            </v-row>
+          </v-container>
+        </v-card-text>
         <v-card-actions class="cart-actions__container pa-4">
-          <div class="cart-add">
+          <div v-if="items.length" class="cart-add">
             <v-btn
               large
               color="red"
@@ -121,6 +136,18 @@
               @click="sendMessage"
             >
               FINALIZAR PEDIDO
+            </v-btn>
+          </div>
+          <div v-else class="cart-add">
+            <v-btn
+              large
+              color="green"
+              dark
+              min-width="100%"
+              class="cart-add__btn text-capitalize"
+              @click="closeCart"
+            >
+              ADICIONAR PRODUTOS
             </v-btn>
           </div>
         </v-card-actions>
@@ -168,6 +195,7 @@ export default {
       return this.items.filter(item => item.meal.category === categoryId)
     },
     closeCart () {
+      console.log('closeCart')
       this.$emit('closeCart')
     },
     checkCartCategory (categoryId) {
@@ -190,7 +218,7 @@ export default {
     sendMessage () {
       let message = 'Olá, segue o meu pedido: \n' +
         '-----------------------------'
-      const phone = '5548'
+      const phone = '5548996461911'
       this.categories.forEach((category) => {
         message += '\n'
         message += `*${category.label.pt_BR}:*\n\n`

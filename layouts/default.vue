@@ -21,10 +21,27 @@
         </div>
         <v-spacer />
         <v-btn
-          icon
-          @click.stop="rightDrawer = !rightDrawer"
+          depressed
+          @click="isCartVisible = !isCartVisible"
         >
-          <v-icon>mdi-menu</v-icon>
+          <v-badge
+            :content="quantity"
+            :value="quantity"
+            color="red"
+          >
+            <v-icon
+              v-if="$route.path === '/cart'"
+              color="black"
+            >
+              mdi-cart
+            </v-icon>
+            <v-icon
+              v-else
+              color="black"
+            >
+              mdi-cart-outline
+            </v-icon>
+          </v-badge>
         </v-btn>
       </div>
     </v-app-bar>
