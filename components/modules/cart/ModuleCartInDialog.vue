@@ -14,23 +14,23 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
-import ModuleCart from '@/components/modules/cart/ModuleCart.vue'
+import { mapGetters } from 'vuex';
+import ModuleCart from '@/components/modules/cart/ModuleCart.vue';
 
 export default {
   components: {
-    ModuleCart
+    ModuleCart,
   },
   props: {
-    isCartVisible: Boolean
+    isCartVisible: Boolean,
   },
   computed: {
-    ...mapGetters('cart', ['quantity'])
+    ...mapGetters('cart', ['quantity']),
   },
   methods: {
-    closeCart () {
-      this.$emit('closeCart')
-    }
-  }
-}
+    closeCart() {
+      this.$emit('closeCart');
+    },
+  },
+};
 </script>

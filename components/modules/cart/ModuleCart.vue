@@ -31,6 +31,7 @@
           </div>
         </v-card-title>
         <v-card-text v-if="items.length" class="pa-0">
+          <Delivery />
           <div
             v-for="category in categories"
             :key="category.id"
@@ -163,80 +164,82 @@
 </template>
 
 <script>
-import { mapActions, mapGetters, mapState } from 'vuex'
-import ItemDialog from '@/components/modules/items/ItemDialog.vue'
+import { mapActions, mapGetters, mapState } from 'vuex';
+import ItemDialog from '@/components/modules/items/ItemDialog.vue';
+import Delivery from '@/components/shared/Delivery.vue';
 
 export default {
   name: 'ModuleCart',
   components: {
-    ItemDialog
+    Delivery,
+    ItemDialog,
   },
   props: {
-    isCartVisible: Boolean
+    isCartVisible: Boolean,
   },
-  data () {
+  data() {
     return {
       isOpenItem: false,
       currentOpenItem: {},
-      sheet: false
-    }
+      sheet: false,
+    };
   },
   computed: {
     ...mapState('cart', ['items', 'cartTotalPrice']),
     // ...mapGetters('cart', ['cartTotalPrice']),
-    ...mapGetters('meal', ['categories'])
+    ...mapGetters('meal', ['categories']),
   },
   methods: {
     ...mapActions('cart', ['dispatchRemoveCartItem']),
-    lookItems () {
-      console.log('cart items', this.items, this.cartTotalPrice)
+    lookItems() {
+      console.log('cart items', this.items, this.cartTotalPrice);
     },
-    filteredMeals (categoryId) {
-      return this.items.filter(item => item.meal.category === categoryId)
+    filteredMeals(categoryId) {
+      return this.items.filter((item) => item.meal.category === categoryId);
     },
-    closeCart () {
-      console.log('closeCart')
-      this.$emit('closeCart')
+    closeCart() {
+      console.log('closeCart');
+      this.$emit('closeCart');
     },
-    checkCartCategory (categoryId) {
-      return this.items.some(item => categoryId === item.meal.category)
+    checkCartCategory(categoryId) {
+      return this.items.some((item) => categoryId === item.meal.category);
     },
-    formatPrice (price) {
-      return parseFloat(price).toFixed(2)
+    formatPrice(price) {
+      return parseFloat(price).toFixed(2);
     },
-    openEditItem (item) {
-      this.isOpenItem = true
-      this.currentOpenItem = item
+    openEditItem(item) {
+      this.isOpenItem = true;
+      this.currentOpenItem = item;
     },
-    closeEditItem () {
-      this.isOpenItem = false
-      this.currentOpenItem = {}
+    closeEditItem() {
+      this.isOpenItem = false;
+      this.currentOpenItem = {};
     },
-    calcItemPrice (quantity, price) {
-      return quantity * price
+    calcItemPrice(quantity, price) {
+      return quantity * price;
     },
-    sendMessage () {
-      let message = 'Olá, segue o meu pedido: \n' +
-        '-----------------------------'
-      const phone = '5548996461911'
+    sendMessage() {
+      let message = 'Olá, segue o meu pedido: \n'
+        + '-----------------------------';
+      const phone = '5548996461911';
       this.categories.forEach((category) => {
-        message += '\n'
-        message += `*${category.label.pt_BR}:*\n\n`
+        message += '\n';
+        message += `*${category.label.pt_BR}:*\n\n`;
         this.filteredMeals(category.id).forEach((item) => {
-          message += `*${item.quantity}x ${item.meal.label}* \n`
-          if (item.comment) { message += `_Obs: ${item.comment.trim()}_ \n\n` }
-          if (!item.comment) { message += '' }
-        })
-        message += '-----------------------------'
-      })
-      message += `\n\nSubtotal: R$${this.formatPrice(this.cartTotalPrice)}\n`
-      message += 'Frete: Grátis\n'
-      message += `Total: R$${this.formatPrice(this.cartTotalPrice)}\n`
-      message = window.encodeURIComponent(message)
-      return window.open('https://api.whatsapp.com/send?phone=' + phone + '&text=' + message, '_blank')
-    }
-  }
-}
+          message += `*${item.quantity}x ${item.meal.label}* \n`;
+          if (item.comment) { message += `_Obs: ${item.comment.trim()}_ \n\n`; }
+          if (!item.comment) { message += ''; }
+        });
+        message += '-----------------------------';
+      });
+      message += `\n\nSubtotal: R$${this.formatPrice(this.cartTotalPrice)}\n`;
+      message += 'Frete: Grátis\n';
+      message += `Total: R$${this.formatPrice(this.cartTotalPrice)}\n`;
+      message = window.encodeURIComponent(message);
+      return window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${message}`, '_blank');
+    },
+  },
+};
 </script>
 <style lang="scss">
 .cart {

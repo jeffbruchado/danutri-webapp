@@ -112,7 +112,8 @@
   </v-dialog>
 </template>
 <script>
-import { mapActions, mapGetters } from 'vuex'
+import { mapActions, mapGetters } from 'vuex';
+
 export default {
   name: 'ItemDialog',
   props: {
@@ -120,10 +121,10 @@ export default {
     isEditing: Boolean,
     item: {
       type: Object,
-      default: () => {}
-    }
+      default: () => {},
+    },
   },
-  data () {
+  data() {
     return {
       currentOpenMeal: {},
       categories: [
@@ -132,25 +133,25 @@ export default {
           type: 'lunchboxes',
           label: {
             pt_BR: 'Marmitas',
-            en_US: 'Lunch Boxes'
-          }
+            en_US: 'Lunch Boxes',
+          },
         },
         {
           id: '2',
           type: 'broths',
           label: {
             pt_BR: 'Caldos',
-            en_US: 'Broths'
-          }
+            en_US: 'Broths',
+          },
         },
         {
           id: '3',
           type: 'pies',
           label: {
             pt_BR: 'Empadões',
-            en_US: 'Broths'
-          }
-        }
+            en_US: 'Broths',
+          },
+        },
       ],
       meals: [
         {
@@ -158,163 +159,164 @@ export default {
           label: 'Panqueca  de Carne ou Frango ao Molho Sugo',
           description: 'Description auhsdiashui dauhshd huaisuih dasuhi duhiasiuhd uhiasiuha sdiuhuihads hiuaiuhsd uhiasuih ',
           category: '1',
-          price: 15.99
+          price: 15.99,
         },
         {
           id: '2',
           label: 'Frango com Páprica, Arroz Integral e Mix de Legumes',
           description: 'Description',
           category: '1',
-          price: 16.00
+          price: 16.00,
         },
         {
           id: '3',
           label: 'Carne de Panela, Purê de Abóbora e Couve',
           description: 'Description',
           category: '1',
-          price: 16.00
+          price: 16.00,
         },
         {
           id: '4',
           label: 'Strogonoff de Frango, Arroz Integral e Legumes',
           description: 'Description',
           category: '1',
-          price: 16.00
+          price: 16.00,
         },
         {
           id: '5',
           label: 'Macarrão Integral á Bolonhesa',
           description: 'Description',
           category: '1',
-          price: 16.00
+          price: 16.00,
         },
         {
           id: '6',
           label: 'Frango em Cubos com Creme de Milho, Batata Doce Assada e Mix de Legumes',
           description: 'Description',
           category: '1',
-          price: 16.00
+          price: 16.00,
         },
         {
           id: '7',
           label: 'Caldo de Batata Baroa e Carne',
           description: 'Description',
           category: '2',
-          price: 13.00
+          price: 13.00,
         },
         {
           id: '8',
           label: 'Caldo Verde com Frango',
           description: 'Description',
           category: '2',
-          price: 13.00
+          price: 13.00,
         },
         {
           id: '9',
           label: 'Caldo de Abóbora e Frango',
           description: 'Description',
           category: '2',
-          price: 13.00
+          price: 13.00,
         },
         {
           id: '10',
           label: 'Empadão de Frango',
           description: 'Description',
           category: '3',
-          price: 14.00
+          price: 14.00,
         },
         {
           id: '11',
           label: 'Empadão de Frango com Catupiry',
           description: 'Description',
           category: '3',
-          price: 16.00
+          price: 16.00,
         },
         {
           id: '12',
           label: 'Empadão de Frango com Palmito',
           description: 'Description',
           category: '3',
-          price: 17.00
-        }
+          price: 17.00,
+        },
       ],
       form: {
         comment: '',
         itemQuantityCounter: 1,
-        loading: false
-      }
-    }
+        loading: false,
+      },
+    };
   },
   computed: {
-    currentOpenMealComment () {
-      return this.form.comment ? this.form.comment.length : 0
+    currentOpenMealComment() {
+      return this.form.comment ? this.form.comment.length : 0;
     },
-    currentOpenMealPrice () {
-      return parseFloat(this.currentOpenMeal.price * this.form.itemQuantityCounter).toFixed(2)
+    currentOpenMealPrice() {
+      return parseFloat(this.currentOpenMeal.price * this.form.itemQuantityCounter).toFixed(2);
     },
-    ...mapGetters('cart', ['quantity'])
+    ...mapGetters('cart', ['quantity']),
   },
   watch: {
-    isOpenItem () {
+    isOpenItem() {
       if (this.isOpenItem) {
-        this.mountItemObj()
+        this.mountItemObj();
         // eslint-disable-next-line no-console
-        console.log('currentOpenMeal', this.currentOpenMeal, this.form)
+        console.log('currentOpenMeal', this.currentOpenMeal, this.form);
       } else {
-        this.currentOpenMeal = {}
+        this.currentOpenMeal = {};
       }
-    }
+    },
   },
   methods: {
     ...mapActions('cart', [
       'dispatchAddToCart',
-      'dispatchEditCartItem'
+      'dispatchEditCartItem',
     ]),
-    filteredMeals (categoryId) {
-      return this.meals.filter(meal => meal.category === categoryId)
+    filteredMeals(categoryId) {
+      return this.meals.filter((meal) => meal.category === categoryId);
     },
-    closeItem () {
-      console.log('closeItem')
-      this.form.loading = true
-      this.$emit('closeItem')
-      this.clearMealForm()
-      this.form.loading = false
+    closeItem() {
+      console.log('closeItem');
+      this.form.loading = true;
+      this.$emit('closeItem');
+      this.clearMealForm();
+      this.form.loading = false;
     },
-    clearMealForm () {
-      this.currentOpenMeal = {}
-      this.form.comment = ''
-      this.form.itemQuantityCounter = 1
+    clearMealForm() {
+      this.currentOpenMeal = {};
+      this.form.comment = '';
+      this.form.itemQuantityCounter = 1;
     },
-    mountItemObj () {
+    mountItemObj() {
       // eslint-disable-next-line no-return-assign
-      if (!this.isEditing) { return this.currentOpenMeal = this.item.meal }
-      if (this.item.meal) { this.currentOpenMeal = this.item.meal }
-      if (this.item.comment) { this.form.comment = this.item.comment }
-      if (this.item.quantity) { this.form.itemQuantityCounter = this.item.quantity }
+      if (!this.isEditing) return this.currentOpenMeal = this.item.meal;
+      if (this.item.meal) this.currentOpenMeal = this.item.meal;
+      if (this.item.comment) this.form.comment = this.item.comment;
+      if (this.item.quantity) this.form.itemQuantityCounter = this.item.quantity;
+      return {};
     },
-    addToCart () {
+    addToCart() {
       const item = {
         meal: this.currentOpenMeal,
         comment: this.form.comment,
         quantity: this.form.itemQuantityCounter,
-        priceTotal: this.currentOpenMealPrice
-      }
-      this.dispatchAddToCart(item)
-      this.closeItem()
+        priceTotal: this.currentOpenMealPrice,
+      };
+      this.dispatchAddToCart(item);
+      this.closeItem();
     },
-    editCartItem () {
+    editCartItem() {
       const item = {
         id: this.item.id,
         meal: this.currentOpenMeal,
         comment: this.form.comment,
         quantity: this.form.itemQuantityCounter,
-        priceTotal: this.currentOpenMealPrice
-      }
-      this.dispatchEditCartItem(item)
-      this.closeItem()
-    }
-  }
-}
+        priceTotal: this.currentOpenMealPrice,
+      };
+      this.dispatchEditCartItem(item);
+      this.closeItem();
+    },
+  },
+};
 </script>
 <style lang="scss">
 .lunchboxes-menu {
