@@ -10,10 +10,15 @@
     >
       <v-card>
         <v-card-title flat class="pl-4 pr-4 pb-2 cart-nav-header">
+          <div
+            class="cart-nav-header__title text-wrap text-break d-flex justify-center"
+          >
+            SUA SACOLA
+          </div>
           <v-btn
             icon
             color="red"
-            class="col-1"
+            class="cart-nav-header--icon"
             @click="closeCart"
           >
             <v-icon
@@ -23,15 +28,9 @@
               {{ $vuetify.breakpoint.mobile && !$vuetify.breakpoint.sm ? 'mdi-chevron-down' : 'mdi-close' }}
             </v-icon>
           </v-btn>
-          <div
-            class="cart-nav-header__title text-wrap text-break col-10"
-            @click="lookItems"
-          >
-            SUA SACOLA
-          </div>
         </v-card-title>
         <v-card-text v-if="items.length" class="pa-0">
-          <Delivery />
+          <Delivery ref="deliveryRef"/>
           <div
             v-for="category in categories"
             :key="category.id"
@@ -128,16 +127,32 @@
         </v-card-text>
         <v-card-actions class="cart-actions__container pa-4">
           <div v-if="items.length" class="cart-add">
-            <v-btn
-              large
-              color="red"
-              dark
-              min-width="100%"
-              class="cart-add__btn text-capitalize"
-              @click="sendMessage"
+            <v-tooltip
+              top
+              :disabled="!checkIfDeliveryOrTakeAwayAddressIsEmpty"
+              nudge-top="10"
+              max-width="250"
+              content-class="text-center"
             >
-              FINALIZAR PEDIDO
-            </v-btn>
+              <template v-slot:activator="{ on, attrs }">
+                <div v-on="on">
+                  <v-btn
+                    large
+                    color="red"
+                    :dark="!checkIfDeliveryOrTakeAwayAddressIsEmpty"
+                    v-bind="attrs"
+                    v-on="on"
+                    min-width="100%"
+                    class="cart-add__btn text-capitalize"
+                    :disabled="checkIfDeliveryOrTakeAwayAddressIsEmpty"
+                    @click="sendMessage"
+                  >
+                    FINALIZAR PEDIDO
+                  </v-btn>
+                </div>
+              </template>
+              <span>É necessário definir o Endereço de Entrega para Finalizar o Pedido</span>
+            </v-tooltip>
           </div>
           <div v-else class="cart-add">
             <v-btn
@@ -165,6 +180,7 @@
 
 <script>
 import { mapActions, mapGetters, mapState } from 'vuex';
+import { isEmpty } from 'lodash';
 import ItemDialog from '@/components/modules/items/ItemDialog.vue';
 import Delivery from '@/components/shared/Delivery.vue';
 
@@ -185,20 +201,27 @@ export default {
     };
   },
   computed: {
-    ...mapState('cart', ['items', 'cartTotalPrice']),
+    ...mapState('cart', [
+      'items',
+      'cartTotalPrice',
+      'selectedDeliveryType',
+      'selectedTakeAwayAddress',
+    ]),
+    ...mapState('user', ['currentUser']),
     // ...mapGetters('cart', ['cartTotalPrice']),
     ...mapGetters('meal', ['categories']),
+    checkIfDeliveryOrTakeAwayAddressIsEmpty() {
+      if (this.selectedDeliveryType === 'entrega') return isEmpty(this.currentUser.address);
+      return isEmpty(this.selectedTakeAwayAddress);
+    },
   },
   methods: {
+    isEmpty,
     ...mapActions('cart', ['dispatchRemoveCartItem']),
-    lookItems() {
-      console.log('cart items', this.items, this.cartTotalPrice);
-    },
     filteredMeals(categoryId) {
       return this.items.filter((item) => item.meal.category === categoryId);
     },
     closeCart() {
-      console.log('closeCart');
       this.$emit('closeCart');
     },
     checkCartCategory(categoryId) {
@@ -222,7 +245,16 @@ export default {
       let message = 'Olá, segue o meu pedido: \n'
         + '-----------------------------';
       const phone = '5548996461911';
+      message += this.mountCartItemsString();
+      message += this.checkDeliveryOrTakeAwayString();
+      message += this.mountCartPriceDetailsString();
+      message = window.encodeURIComponent(message);
+      return window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${message}`, '_blank');
+    },
+    mountCartItemsString() {
+      let message = '';
       this.categories.forEach((category) => {
+        if (!this.checkCartCategory(category.id)) return;
         message += '\n';
         message += `*${category.label.pt_BR}:*\n\n`;
         this.filteredMeals(category.id).forEach((item) => {
@@ -232,11 +264,26 @@ export default {
         });
         message += '-----------------------------';
       });
+      return message;
+    },
+    checkDeliveryOrTakeAwayString() {
+      if (this.$refs.deliveryRef.delivery.currentOption === 'entrega') return this.mountDeliveryString(this.currentUser?.address);
+      return this.mountDeliveryString(this.$refs.deliveryRef.selectedTakeAwayAddress);
+    },
+    mountDeliveryString(adressObj) {
+      let message = '';
+      message += `\nMétodo de Recebimento: *${this.$refs.deliveryRef.delivery.currentOption.toUpperCase()}*`;
+      message += `\n\n${adressObj?.street}, ${adressObj?.number}`;
+      message += `\n${adressObj?.others}\n\n`;
+      message += '-----------------------------';
+      return message;
+    },
+    mountCartPriceDetailsString() {
+      let message = '';
       message += `\n\nSubtotal: R$${this.formatPrice(this.cartTotalPrice)}\n`;
       message += 'Frete: Grátis\n';
       message += `Total: R$${this.formatPrice(this.cartTotalPrice)}\n`;
-      message = window.encodeURIComponent(message);
-      return window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${message}`, '_blank');
+      return message;
     },
   },
 };
@@ -251,7 +298,7 @@ export default {
         font-weight: 500;
         left: 0;
         margin: 0;
-        padding: 2px 20% 0 15%;
+        padding: 10px;
         text-align: center;
         text-transform: uppercase;
         width: 100%;
@@ -263,6 +310,9 @@ export default {
           line-height: 1.5rem;
         }
       }
+      &--icon {
+        position: absolute;
+      }
     }
   }
   &-category {
@@ -272,7 +322,7 @@ export default {
         font-weight: 500;
         left: 0;
         margin: 0;
-        padding: 2px 20% 0 15%;
+        padding: 2px 0 0 0;
         text-align: center;
         text-transform: uppercase;
         width: 100%;
@@ -301,7 +351,7 @@ export default {
         }
         &__price {
           display: flex;
-          justify-content: end;
+          justify-content: flex-end;
           color: #272727;
           font-weight: normal;
           line-height: 1rem;

@@ -14,6 +14,12 @@ export const actions = {
   dispatchUpdateCartTotalPrice({ commit }) {
     commit('updateCartTotalPrice');
   },
+  dispatchSelectDeliveryType({ commit }, payload) {
+    commit('updateSelectedDeliveryType', payload);
+  },
+  dispatchSelectTakeAwayAddress({ commit }, payload) {
+    commit('updateSelectedTakeAwayAddress', payload);
+  },
 };
 
 export const mutations = {
@@ -41,6 +47,12 @@ export const mutations = {
     // eslint-disable-next-line no-param-reassign
     state.cartTotalPrice = cartTotalPrice;
   },
+  updateSelectedDeliveryType(state, payload) {
+    state.selectedDeliveryType = payload;
+  },
+  updateSelectedTakeAwayAddress(state, payload) {
+    state.selectedTakeAwayAddress = payload;
+  },
 };
 
 export const getters = {
@@ -60,4 +72,26 @@ export const state = () => ({
   items: [],
   quantity: 0,
   cartTotalPrice: 0.0,
+  selectedDeliveryType: '',
+  selectedTakeAwayAddress: {},
+  takeAwayAddresses: [
+    {
+      id: '3794351c-2b74-11ec-8d3d-0242ac130003',
+      street: 'Avenida Atilio Pagani',
+      others: 'Aririu da Formiga, Palhoça - SC, Brasil',
+      number: '119',
+      complement: 'Casa',
+      reference: 'Última casa da Rua',
+      icon: 'building.png',
+    },
+    {
+      id: '3ed367d0-2b74-11ec-8d3d-0242ac130003',
+      street: 'Rua Maria Amélia Espíndola',
+      others: 'Aririu da Formiga, Palhoça - SC, Brasil',
+      number: '119',
+      complement: 'Casa',
+      reference: 'Última casa da Rua',
+      icon: 'house.png',
+    },
+  ],
 });

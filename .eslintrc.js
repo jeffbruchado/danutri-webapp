@@ -33,6 +33,15 @@ module.exports = {
       },
     ],
     'no-shadow': 'off',
+    'no-param-reassign': [
+      'error', {
+        props: false,
+      },
+    ],
+    'prefer-destructuring': ['error', {
+      array: false,
+      object: true,
+    }],
   },
   settings: {
     'import/core-modules': ['vue', 'vuex'], // these modules are included in nuxt.js
