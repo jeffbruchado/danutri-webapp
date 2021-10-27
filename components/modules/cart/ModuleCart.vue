@@ -10,10 +10,15 @@
     >
       <v-card>
         <v-card-title flat class="pl-4 pr-4 pb-2 cart-nav-header">
+          <div
+            class="cart-nav-header__title text-wrap text-break d-flex justify-center"
+          >
+            SUA SACOLA
+          </div>
           <v-btn
             icon
             color="red"
-            class="col-1"
+            class="cart-nav-header--icon"
             @click="closeCart"
           >
             <v-icon
@@ -23,14 +28,9 @@
               {{ $vuetify.breakpoint.mobile && !$vuetify.breakpoint.sm ? 'mdi-chevron-down' : 'mdi-close' }}
             </v-icon>
           </v-btn>
-          <div
-            class="cart-nav-header__title text-wrap text-break col-10"
-            @click="lookItems"
-          >
-            SUA SACOLA
-          </div>
         </v-card-title>
         <v-card-text v-if="items.length" class="pa-0">
+          <Delivery ref="deliveryRef"/>
           <div
             v-for="category in categories"
             :key="category.id"
@@ -99,11 +99,32 @@
           <div class="cart-summary pl-4 pr-4 pt-3 pb-5">
             <div class="cart-summary__total_amount pl-3 pr-2">
               <span>Subtotal</span>
-              <span>R$ {{ formatPrice(cartTotalPrice) }}</span>
+              <span>R$ {{ formatPrice(cartSubTotalPrice) }}</span>
             </div>
             <div class="cart-summary__total_delivery pl-3 pr-2">
               <span>Taxa de entrega</span>
-              <span>Grátis</span>
+              <v-tooltip
+                top
+                :disabled="!checkIfDeliveryOrTakeAwayAddressIsEmpty"
+                max-width="250"
+                content-class="text-center"
+              >
+                <template v-slot:activator="{ on, attrs }">
+                  <div v-on="on">
+                    <span
+                      v-if="checkDeliveryOrTakeAway"
+                      v-bind="attrs"
+                    >
+                      {{ !currentUser.address.routes ? 'Calcular' : `R$ ${formatPrice(cartDeliveryTotalPrice)}` }}
+                    </span>
+                    <span v-else>
+                      Gratuita
+                    </span>
+                  </div>
+                </template>
+                <span>É necessário definir o Endereço de Entrega para calcular o valor do Frete</span>
+              </v-tooltip>
+
             </div>
             <div class="cart-summary__total_cost pl-3 pr-2">
               <span>Total</span>
@@ -127,16 +148,32 @@
         </v-card-text>
         <v-card-actions class="cart-actions__container pa-4">
           <div v-if="items.length" class="cart-add">
-            <v-btn
-              large
-              color="red"
-              dark
-              min-width="100%"
-              class="cart-add__btn text-capitalize"
-              @click="sendMessage"
+            <v-tooltip
+              top
+              :disabled="!checkIfDeliveryOrTakeAwayAddressIsEmpty"
+              nudge-top="10"
+              max-width="250"
+              content-class="text-center"
             >
-              FINALIZAR PEDIDO
-            </v-btn>
+              <template v-slot:activator="{ on, attrs }">
+                <div v-on="on">
+                  <v-btn
+                    large
+                    color="red"
+                    :dark="!checkIfDeliveryOrTakeAwayAddressIsEmpty"
+                    v-bind="attrs"
+                    v-on="on"
+                    min-width="100%"
+                    class="cart-add__btn text-capitalize"
+                    :disabled="checkIfDeliveryOrTakeAwayAddressIsEmpty"
+                    @click="sendMessage"
+                  >
+                    FINALIZAR PEDIDO
+                  </v-btn>
+                </div>
+              </template>
+              <span>É necessário definir o Endereço de Entrega para Finalizar o Pedido</span>
+            </v-tooltip>
           </div>
           <div v-else class="cart-add">
             <v-btn
@@ -163,80 +200,138 @@
 </template>
 
 <script>
-import { mapActions, mapGetters, mapState } from 'vuex'
-import ItemDialog from '@/components/modules/items/ItemDialog.vue'
+import { mapActions, mapGetters, mapState } from 'vuex';
+import { isEmpty } from 'lodash';
+import ItemDialog from '@/components/modules/items/ItemDialog.vue';
+import Delivery from '@/components/shared/Delivery.vue';
 
 export default {
   name: 'ModuleCart',
   components: {
-    ItemDialog
+    Delivery,
+    ItemDialog,
   },
   props: {
-    isCartVisible: Boolean
+    isCartVisible: Boolean,
   },
-  data () {
+  data() {
     return {
       isOpenItem: false,
       currentOpenItem: {},
-      sheet: false
-    }
+      sheet: false,
+    };
+  },
+  watch: {
+    currentUser: {
+      handler() {
+        if (!this.currentUser?.address?.routes) return;
+        this.calcTax(this.currentUser.address.routes);
+      },
+      deep: true,
+    },
   },
   computed: {
-    ...mapState('cart', ['items', 'cartTotalPrice']),
-    // ...mapGetters('cart', ['cartTotalPrice']),
-    ...mapGetters('meal', ['categories'])
+    ...mapState('cart', [
+      'items',
+      'cartDeliveryTotalPrice',
+      'cartSubTotalPrice',
+      'selectedDeliveryType',
+      'selectedTakeAwayAddress',
+      'takeAwayAddresses',
+    ]),
+    ...mapState('user', ['currentUser']),
+    ...mapGetters('cart', ['cartTotalPrice']),
+    ...mapGetters('meal', ['categories']),
+    checkIfDeliveryOrTakeAwayAddressIsEmpty() {
+      if (this.selectedDeliveryType === 'entrega') return isEmpty(this.currentUser.address);
+      return isEmpty(this.selectedTakeAwayAddress);
+    },
+    checkDeliveryOrTakeAway() {
+      if (this.$refs.deliveryRef.delivery.currentOption === 'entrega') return true;
+      return false;
+    },
   },
   methods: {
-    ...mapActions('cart', ['dispatchRemoveCartItem']),
-    lookItems () {
-      console.log('cart items', this.items, this.cartTotalPrice)
+    isEmpty,
+    ...mapActions('cart', [
+      'dispatchRemoveCartItem',
+      'dispatchUpdateCartDeliveryPrice',
+    ]),
+    filteredMeals(categoryId) {
+      return this.items.filter((item) => item.meal.category === categoryId);
     },
-    filteredMeals (categoryId) {
-      return this.items.filter(item => item.meal.category === categoryId)
+    closeCart() {
+      this.$emit('closeCart');
     },
-    closeCart () {
-      console.log('closeCart')
-      this.$emit('closeCart')
+    checkCartCategory(categoryId) {
+      return this.items.some((item) => categoryId === item.meal.category);
     },
-    checkCartCategory (categoryId) {
-      return this.items.some(item => categoryId === item.meal.category)
+    formatPrice(price) {
+      return parseFloat(price).toFixed(2);
     },
-    formatPrice (price) {
-      return parseFloat(price).toFixed(2)
+    openEditItem(item) {
+      this.isOpenItem = true;
+      this.currentOpenItem = item;
     },
-    openEditItem (item) {
-      this.isOpenItem = true
-      this.currentOpenItem = item
+    closeEditItem() {
+      this.isOpenItem = false;
+      this.currentOpenItem = {};
     },
-    closeEditItem () {
-      this.isOpenItem = false
-      this.currentOpenItem = {}
+    calcItemPrice(quantity, price) {
+      return quantity * price;
     },
-    calcItemPrice (quantity, price) {
-      return quantity * price
+    sendMessage() {
+      let message = 'Olá, segue o meu pedido: \n'
+        + '-----------------------------';
+      const phone = '5548996461911';
+      message += this.mountCartItemsString();
+      message += this.checkDeliveryOrTakeAwayString();
+      message += this.mountCartPriceDetailsString();
+      message = window.encodeURIComponent(message);
+      return window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${message}`, '_blank');
     },
-    sendMessage () {
-      let message = 'Olá, segue o meu pedido: \n' +
-        '-----------------------------'
-      const phone = '5548996461911'
+    mountCartItemsString() {
+      let message = '';
       this.categories.forEach((category) => {
-        message += '\n'
-        message += `*${category.label.pt_BR}:*\n\n`
+        if (!this.checkCartCategory(category.id)) return;
+        message += '\n';
+        message += `*${category.label.pt_BR}:*\n\n`;
         this.filteredMeals(category.id).forEach((item) => {
-          message += `*${item.quantity}x ${item.meal.label}* \n`
-          if (item.comment) { message += `_Obs: ${item.comment.trim()}_ \n\n` }
-          if (!item.comment) { message += '' }
-        })
-        message += '-----------------------------'
-      })
-      message += `\n\nSubtotal: R$${this.formatPrice(this.cartTotalPrice)}\n`
-      message += 'Frete: Grátis\n'
-      message += `Total: R$${this.formatPrice(this.cartTotalPrice)}\n`
-      message = window.encodeURIComponent(message)
-      return window.open('https://api.whatsapp.com/send?phone=' + phone + '&text=' + message, '_blank')
-    }
-  }
-}
+          message += `*${item.quantity}x ${item.meal.label}* \n`;
+          if (item.comment) { message += `_Obs: ${item.comment.trim()}_ \n\n`; }
+          if (!item.comment) { message += ''; }
+        });
+        message += '-----------------------------';
+      });
+      return message;
+    },
+    checkDeliveryOrTakeAwayString() {
+      if (this.$refs.deliveryRef.delivery.currentOption === 'entrega') return this.mountDeliveryString(this.currentUser?.address);
+      return this.mountDeliveryString(this.$refs.deliveryRef.selectedTakeAwayAddress);
+    },
+    mountDeliveryString(adressObj) {
+      let message = '';
+      message += `\nMétodo de Recebimento: *${this.$refs.deliveryRef.delivery.currentOption.toUpperCase()}*`;
+      message += `\n\n${adressObj?.street}, ${adressObj?.number}`;
+      message += `\n${adressObj?.others}\n\n`;
+      message += '-----------------------------';
+      return message;
+    },
+    mountCartPriceDetailsString() {
+      let message = '';
+      message += `\n\nSubtotal: R$${this.formatPrice(this.cartTotalPrice)}\n`;
+      message += `Taxa de entrega: R$${this.formatPrice(this.cartDeliveryTotalPrice)}\n`;
+      message += `Total: R$${this.formatPrice(this.cartTotalPrice)}\n`;
+      return message;
+    },
+    calcTax(routes) {
+      const deliveryDistanceKm = routes?.distance?.value / 1000;
+      let deliveryValue = 0.0;
+      for (let count = 0; count < deliveryDistanceKm; count += 1) deliveryValue += 1.35;
+      this.dispatchUpdateCartDeliveryPrice(deliveryValue);
+    },
+  },
+};
 </script>
 <style lang="scss">
 .cart {
@@ -248,7 +343,7 @@ export default {
         font-weight: 500;
         left: 0;
         margin: 0;
-        padding: 2px 20% 0 15%;
+        padding: 10px;
         text-align: center;
         text-transform: uppercase;
         width: 100%;
@@ -260,6 +355,9 @@ export default {
           line-height: 1.5rem;
         }
       }
+      &--icon {
+        position: absolute;
+      }
     }
   }
   &-category {
@@ -269,7 +367,7 @@ export default {
         font-weight: 500;
         left: 0;
         margin: 0;
-        padding: 2px 20% 0 15%;
+        padding: 2px 0 0 0;
         text-align: center;
         text-transform: uppercase;
         width: 100%;
@@ -298,7 +396,7 @@ export default {
         }
         &__price {
           display: flex;
-          justify-content: end;
+          justify-content: flex-end;
           color: #272727;
           font-weight: normal;
           line-height: 1rem;

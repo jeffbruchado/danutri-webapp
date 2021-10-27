@@ -113,14 +113,14 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
-import ModuleCart from '@/components/modules/cart/ModuleCart.vue'
+import { mapGetters } from 'vuex';
+import ModuleCart from '@/components/modules/cart/ModuleCart.vue';
 
 export default {
   components: {
-    ModuleCart
+    ModuleCart,
   },
-  data () {
+  data() {
     return {
       clipped: false,
       drawer: false,
@@ -129,30 +129,30 @@ export default {
         {
           icon: 'mdi-apps',
           title: 'Welcome',
-          to: '/'
+          to: '/',
         },
         {
           icon: 'mdi-chart-bubble',
           title: 'Inspire',
-          to: '/inspire'
-        }
+          to: '/inspire',
+        },
       ],
       miniVariant: false,
       right: true,
       rightDrawer: false,
       title: 'Da Nutri Sabores',
-      isCartVisible: false
-    }
+      isCartVisible: false,
+    };
   },
   computed: {
-    ...mapGetters('cart', ['quantity'])
+    ...mapGetters('cart', ['quantity']),
   },
   methods: {
-    closeCart () {
-      this.isCartVisible = false
-    }
-  }
-}
+    closeCart() {
+      this.isCartVisible = false;
+    },
+  },
+};
 </script>
 
 <style lang="scss" scoped>

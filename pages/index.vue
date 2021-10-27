@@ -15,6 +15,11 @@
         <div class="lunchboxes-menu-item__title mb-2 pt-5">
           {{ category.label.pt_BR }}
         </div>
+        <v-progress-linear
+          v-if="isLoading"
+          indeterminate
+          color="yellow darken-2"
+        ></v-progress-linear>
         <v-row dense class="lunchboxes-menu-item__row">
           <v-col
             v-for="meal in filteredMeals(category.id)"
@@ -28,46 +33,71 @@
             <v-hover
               v-slot="{ hover }"
             >
-              <v-card
-                v-if="meal.category === category.id"
-                :elevation="hover ? 2 : 0"
-                class="meal-item__button mb-lg-2 transition-swing"
-                outlined
-                @click="openMeal(meal)"
+              <v-lazy
+                v-model="isCardVisible"
+                :options="{
+                  threshold: .5
+                }"
+                transition="fade-transition"
               >
-                <v-list-item three-line>
-                  <v-list-item-content style="max-width: 65%;">
-                    <v-list-item-title class="meal-item__title mb-1 text-wrap">
-                      {{ meal.label }}
-                    </v-list-item-title>
-                    <v-list-item-subtitle class="">
-                      {{ meal.description }}
-                    </v-list-item-subtitle>
-                    <v-list-item-subtitle class="meal-item__serves">
-                      Serve 1 pessoa
-                    </v-list-item-subtitle>
-                  </v-list-item-content>
-
-                  <v-list-item-avatar
-                    tile
-                    size="90"
-                    color="grey"
-                  >
-                    <img
-                      src="https://cdn.vuetifyjs.com/images/cards/docks.jpg"
-                      alt="John"
-                      style="border-radius: 4px;"
-                    >
-                  </v-list-item-avatar>
-                </v-list-item>
-                <v-card-actions class="pa-0">
-                  <span class="meal-item__price">
-                    <span class="meal-item__price--discount">
-                      R${{ parseFloat(meal.price).toFixed(2) }}
-                    </span>
-                  </span>
-                </v-card-actions>
-              </v-card>
+                <v-card
+                  v-if="meal.category === category.id"
+                  :elevation="hover ? 2 : 0"
+                  class="meal-item__button mb-lg-2 transition-swing"
+                  outlined
+                  min-height="184px"
+                  @click="openMeal(meal)"
+                >
+                  <div class="d-flex flex-no-wrap justify-space-between">
+                    <div>
+                      <v-card-title
+                        class="meal-item__title mb-3 text-break"
+                        v-text="meal.label"
+                      />
+                      <v-card-subtitle
+                        v-if="meal.description"
+                        class="meal-item__description pb-0"
+                        v-text="formatMaxLines(meal.description)"
+                      />
+                      <v-card-subtitle
+                        class="meal-item__serves pb-1"
+                        v-text="'Serve 1 pessoa'"
+                      />
+                      <v-card-actions class="pa-0">
+                        <span class="meal-item__price">
+                          <span class="meal-item__price--discount">
+                            R${{ parseFloat(meal.price).toFixed(2) }}
+                          </span>
+                        </span>
+                      </v-card-actions>
+                    </div>
+                    <div>
+                      <v-img
+                        class="mt-4 mr-4"
+                        contain
+                        style="border-radius: 4px;"
+                        max-height="128"
+                        max-width="127"
+                        src="https://cdn.vuetifyjs.com/images/cards/docks.jpg"
+                        :lazy-src="require('@/static/logo.png')"
+                      >
+                        <template #placeholder>
+                          <v-row
+                            class="fill-height ma-0"
+                            align="center"
+                            justify="center"
+                          >
+                            <v-progress-circular
+                              indeterminate
+                              color="grey lighten-5"
+                            />
+                          </v-row>
+                        </template>
+                      </v-img>
+                    </div>
+                  </div>
+                </v-card>
+              </v-lazy>
             </v-hover>
           </v-col>
         </v-row>
@@ -187,11 +217,14 @@
   </div>
 </template>
 <script>
-import { mapActions, mapGetters } from 'vuex'
+import { mapActions, mapGetters } from 'vuex';
+
 export default {
   name: 'Home',
-  data () {
+  data() {
     return {
+      isLoading: false,
+      isCardVisible: false,
       isOpenMeal: false,
       currentOpenMeal: {},
       categories: [
@@ -200,25 +233,25 @@ export default {
           type: 'lunchboxes',
           label: {
             pt_BR: 'Marmitas',
-            en_US: 'Lunch Boxes'
-          }
+            en_US: 'Lunch Boxes',
+          },
         },
         {
           id: '2',
           type: 'broths',
           label: {
             pt_BR: 'Caldos',
-            en_US: 'Broths'
-          }
+            en_US: 'Broths',
+          },
         },
         {
           id: '3',
           type: 'pies',
           label: {
             pt_BR: 'Empadões',
-            en_US: 'Broths'
-          }
-        }
+            en_US: 'Broths',
+          },
+        },
       ],
       meals: [
         {
@@ -226,141 +259,150 @@ export default {
           label: 'Panqueca  de Carne ou Frango ao Molho Sugo',
           description: 'Description auhsdiashui dauhshd huaisuih dasuhi duhiasiuhd uhiasiuha sdiuhuihads hiuaiuhsd uhiasuih ',
           category: '1',
-          price: 15.99
+          price: 15.99,
         },
         {
           id: '2',
           label: 'Frango com Páprica, Arroz Integral e Mix de Legumes',
           description: 'Description',
           category: '1',
-          price: 16.00
+          price: 16.00,
         },
         {
           id: '3',
           label: 'Carne de Panela, Purê de Abóbora e Couve',
           description: 'Description',
           category: '1',
-          price: 16.00
+          price: 16.00,
         },
         {
           id: '4',
           label: 'Strogonoff de Frango, Arroz Integral e Legumes',
           description: 'Description',
           category: '1',
-          price: 16.00
+          price: 16.00,
         },
         {
           id: '5',
           label: 'Macarrão Integral á Bolonhesa',
           description: 'Description',
           category: '1',
-          price: 16.00
+          price: 16.00,
         },
         {
           id: '6',
           label: 'Frango em Cubos com Creme de Milho, Batata Doce Assada e Mix de Legumes',
           description: 'Description',
           category: '1',
-          price: 16.00
+          price: 16.00,
         },
         {
           id: '7',
           label: 'Caldo de Batata Baroa e Carne',
           description: 'Description',
           category: '2',
-          price: 13.00
+          price: 13.00,
         },
         {
           id: '8',
           label: 'Caldo Verde com Frango',
           description: 'Description',
           category: '2',
-          price: 13.00
+          price: 13.00,
         },
         {
           id: '9',
           label: 'Caldo de Abóbora e Frango',
           description: 'Description',
           category: '2',
-          price: 13.00
+          price: 13.00,
         },
         {
           id: '10',
           label: 'Empadão de Frango',
           description: 'Description',
           category: '3',
-          price: 14.00
+          price: 14.00,
         },
         {
           id: '11',
           label: 'Empadão de Frango com Catupiry',
           description: 'Description',
           category: '3',
-          price: 16.00
+          price: 16.00,
         },
         {
           id: '12',
           label: 'Empadão de Frango com Palmito',
           description: 'Description',
           category: '3',
-          price: 17.00
-        }
+          price: 17.00,
+        },
       ],
       form: {
         comment: '',
         mealAddToCartCounter: 1,
-        loading: false
-      }
-    }
+        loading: false,
+      },
+    };
   },
   computed: {
-    currentOpenMealComment () {
-      return this.form.comment ? this.form.comment.length : 0
+    currentOpenMealComment() {
+      return this.form.comment ? this.form.comment.length : 0;
     },
-    currentOpenMealPrice () {
-      return parseFloat(this.currentOpenMeal.price * this.form.mealAddToCartCounter).toFixed(2)
+    currentOpenMealPrice() {
+      return parseFloat(this.currentOpenMeal.price * this.form.mealAddToCartCounter).toFixed(2);
     },
-    ...mapGetters('cart', ['quantity'])
+    ...mapGetters('cart', ['quantity']),
+  },
+  mounted() {
+    this.$nextTick(() => {
+      this.$nuxt.$loading.start();
+      setTimeout(() => this.$nuxt.$loading.finish(), 1000);
+    });
   },
   methods: {
     ...mapActions('cart', ['dispatchAddToCart']),
-    filteredMeals (categoryId) {
-      return this.meals.filter(meal => meal.category === categoryId)
+    filteredMeals(categoryId) {
+      return this.meals.filter((meal) => meal.category === categoryId);
     },
-    openMeal (meal) {
-      this.form.loading = true
-      this.currentOpenMeal = meal
-      this.isOpenMeal = true
-      this.form.loading = false
+    openMeal(meal) {
+      this.form.loading = true;
+      this.currentOpenMeal = meal;
+      this.isOpenMeal = true;
+      this.form.loading = false;
     },
-    closeMeal () {
-      this.form.loading = true
-      this.isOpenMeal = false
-      this.clearMealForm()
+    closeMeal() {
+      this.form.loading = true;
+      this.isOpenMeal = false;
+      this.clearMealForm();
     },
-    clearMealForm () {
-      this.currentOpenMeal = {}
-      this.form.comment = ''
-      this.form.mealAddToCartCounter = 1
+    clearMealForm() {
+      this.currentOpenMeal = {};
+      this.form.comment = '';
+      this.form.mealAddToCartCounter = 1;
     },
-    generateUID () {
+    generateUID() {
       return Math.floor((1 + Math.random()) * 0x10000)
         .toString(16)
-        .substring(1)
+        .substring(1);
     },
-    addToCart () {
+    addToCart() {
       const item = {
         id: this.generateUID(),
         meal: this.currentOpenMeal,
         comment: this.form.comment,
         quantity: this.form.mealAddToCartCounter,
-        priceTotal: this.currentOpenMealPrice
-      }
-      this.dispatchAddToCart(item)
-      this.closeMeal()
-    }
-  }
-}
+        priceTotal: this.currentOpenMealPrice,
+      };
+      this.dispatchAddToCart(item);
+      this.closeMeal();
+    },
+    formatMaxLines(text) {
+      return text.length > 45 ? `${text.substring(0, 45)}...` : text;
+    },
+  },
+};
 </script>
 <style lang="scss">
 .lunchboxes-menu {
@@ -509,13 +551,16 @@ export default {
     &__title {
       font-family: "SulSans", Helvetica, sans-serif;
       color: #000000 !important;
-      font-weight: 400;
+      font-weight: 500;
       letter-spacing: 0;
       line-height: 1.2rem !important;
+      font-size: 0.90rem;
       @media only screen and (min-width: 768px) {
         font-size: 1.125rem;
         line-height: 1.5rem;
       }
+    }
+    &__description {
     }
     &__serves {
       font-size: 0.875rem;
