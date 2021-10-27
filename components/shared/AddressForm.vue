@@ -111,16 +111,15 @@ export default {
       this.$emit('closeAddressForm');
     },
     confirmAddress() {
-      console.log('confirm Address');
       const payload = {
+        place_id: this.selectedAddress.place_id,
         street: this.getMainTextWithoutNumberIfExist(),
         others: this.getSecondaryText(),
         number: this.address.number,
         complement: this.address.complement,
         reference: this.address.reference,
       };
-      this.dispatchAddAddress(payload);
-      this.$emit('confirmAddress');
+      this.$emit('confirmAddress', payload);
     },
     getMainText() {
       return this.selectedAddress.structured_formatting?.main_text;

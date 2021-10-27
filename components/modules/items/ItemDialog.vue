@@ -259,8 +259,6 @@ export default {
     isOpenItem() {
       if (this.isOpenItem) {
         this.mountItemObj();
-        // eslint-disable-next-line no-console
-        console.log('currentOpenMeal', this.currentOpenMeal, this.form);
       } else {
         this.currentOpenMeal = {};
       }
@@ -275,7 +273,6 @@ export default {
       return this.meals.filter((meal) => meal.category === categoryId);
     },
     closeItem() {
-      console.log('closeItem');
       this.form.loading = true;
       this.$emit('closeItem');
       this.clearMealForm();

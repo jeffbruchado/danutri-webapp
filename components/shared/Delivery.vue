@@ -32,7 +32,10 @@
             cols="8"
             class="pl-4 pr-2 align-self-center"
           >
-            <div v-if="!isEmpty(currentUser.address)">
+            <div
+              class="address-checkout__wrapper-content"
+              v-if="!isEmpty(currentUser.address)"
+            >
               <v-row class="address-checkout__wrapper-content-addr">
                 {{ currentUser.address.street }}, {{ currentUser.address.number }}
               </v-row>

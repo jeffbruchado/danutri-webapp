@@ -99,11 +99,32 @@
           <div class="cart-summary pl-4 pr-4 pt-3 pb-5">
             <div class="cart-summary__total_amount pl-3 pr-2">
               <span>Subtotal</span>
-              <span>R$ {{ formatPrice(cartTotalPrice) }}</span>
+              <span>R$ {{ formatPrice(cartSubTotalPrice) }}</span>
             </div>
             <div class="cart-summary__total_delivery pl-3 pr-2">
               <span>Taxa de entrega</span>
-              <span>Grátis</span>
+              <v-tooltip
+                top
+                :disabled="!checkIfDeliveryOrTakeAwayAddressIsEmpty"
+                max-width="250"
+                content-class="text-center"
+              >
+                <template v-slot:activator="{ on, attrs }">
+                  <div v-on="on">
+                    <span
+                      v-if="checkDeliveryOrTakeAway"
+                      v-bind="attrs"
+                    >
+                      {{ !currentUser.address.routes ? 'Calcular' : `R$ ${formatPrice(cartDeliveryTotalPrice)}` }}
+                    </span>
+                    <span v-else>
+                      Gratuita
+                    </span>
+                  </div>
+                </template>
+                <span>É necessário definir o Endereço de Entrega para calcular o valor do Frete</span>
+              </v-tooltip>
+
             </div>
             <div class="cart-summary__total_cost pl-3 pr-2">
               <span>Total</span>
@@ -200,24 +221,42 @@ export default {
       sheet: false,
     };
   },
+  watch: {
+    currentUser: {
+      handler() {
+        if (!this.currentUser?.address?.routes) return;
+        this.calcTax(this.currentUser.address.routes);
+      },
+      deep: true,
+    },
+  },
   computed: {
     ...mapState('cart', [
       'items',
-      'cartTotalPrice',
+      'cartDeliveryTotalPrice',
+      'cartSubTotalPrice',
       'selectedDeliveryType',
       'selectedTakeAwayAddress',
+      'takeAwayAddresses',
     ]),
     ...mapState('user', ['currentUser']),
-    // ...mapGetters('cart', ['cartTotalPrice']),
+    ...mapGetters('cart', ['cartTotalPrice']),
     ...mapGetters('meal', ['categories']),
     checkIfDeliveryOrTakeAwayAddressIsEmpty() {
       if (this.selectedDeliveryType === 'entrega') return isEmpty(this.currentUser.address);
       return isEmpty(this.selectedTakeAwayAddress);
     },
+    checkDeliveryOrTakeAway() {
+      if (this.$refs.deliveryRef.delivery.currentOption === 'entrega') return true;
+      return false;
+    },
   },
   methods: {
     isEmpty,
-    ...mapActions('cart', ['dispatchRemoveCartItem']),
+    ...mapActions('cart', [
+      'dispatchRemoveCartItem',
+      'dispatchUpdateCartDeliveryPrice',
+    ]),
     filteredMeals(categoryId) {
       return this.items.filter((item) => item.meal.category === categoryId);
     },
@@ -281,9 +320,15 @@ export default {
     mountCartPriceDetailsString() {
       let message = '';
       message += `\n\nSubtotal: R$${this.formatPrice(this.cartTotalPrice)}\n`;
-      message += 'Frete: Grátis\n';
+      message += `Taxa de entrega: R$${this.formatPrice(this.cartDeliveryTotalPrice)}\n`;
       message += `Total: R$${this.formatPrice(this.cartTotalPrice)}\n`;
       return message;
+    },
+    calcTax(routes) {
+      const deliveryDistanceKm = routes?.distance?.value / 1000;
+      let deliveryValue = 0.0;
+      for (let count = 0; count < deliveryDistanceKm; count += 1) deliveryValue += 1.35;
+      this.dispatchUpdateCartDeliveryPrice(deliveryValue);
     },
   },
 };

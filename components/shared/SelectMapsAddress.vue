@@ -114,6 +114,7 @@
 </template>
 
 <script>
+import { mapActions, mapState } from 'vuex';
 import AddressForm from '@/components/shared/AddressForm.vue';
 
 export default {
@@ -127,7 +128,10 @@ export default {
       addressQuery: '',
       addressResults: [],
       selectedAddress: {},
-      service: null,
+      services: {
+        placesApi: null,
+        directionsApi: null,
+      },
       value: null,
       isAddressFormVisible: false,
     };
@@ -155,6 +159,11 @@ export default {
   //     }
   //   },
   // },
+  computed: {
+    ...mapState('cart', [
+      'takeAwayAddresses',
+    ]),
+  },
   watch: {
     addressQuery(newValue) {
       if (newValue) {
@@ -168,28 +177,23 @@ export default {
     },
   },
   methods: {
-    lookAddressQuery() {
-      console.log(this.addressQuery);
-    },
+    ...mapActions('user', ['dispatchAddAddress']),
     closeSelectMapsAddress() {
       this.$emit('closeSelectMapsAddress');
     },
     mapsInit() {
-      this.service = new window.google.maps.places.AutocompleteService();
-      console.log('maps service', this.service);
+      this.services.placesApi = new window.google.maps.places.AutocompleteService();
+      this.services.directionsApi = new window.google.maps.DirectionsService();
     },
     displaySuggestions(predictions, status) {
       if (status !== window.google.maps.places.PlacesServiceStatus.OK) {
         this.addressResults = [];
         return;
       }
-      this.addressResults = predictions.map((prediction) => {
-        console.log('prediction', prediction);
-        return prediction;
-      });
+      this.addressResults = predictions.map((prediction) => prediction);
     },
     getAddressBySearchQuery() {
-      this.service.getPlacePredictions({
+      this.services.placesApi.getPlacePredictions({
         input: this.addressQuery,
       }, this.displaySuggestions);
     },
@@ -206,10 +210,35 @@ export default {
     confirmAddress() {
       this.isAddressFormVisible = true;
     },
+    async getDeliveryDistance() {
+      if (!this.selectedAddress?.place_id) return;
+      const payload = {
+        destination: {
+          placeId: this.selectedAddress?.place_id,
+        },
+        origin: {
+          placeId: this.takeAwayAddresses[0].placeId,
+        },
+        travelMode: 'DRIVING',
+      };
+      // eslint-disable-next-line consistent-return
+      return this.services.directionsApi.route(payload);
+    },
+    async addAddress(address) {
+      const deliveryDistance = await this.getDeliveryDistance();
+      const payload = {
+        ...address,
+      };
+      if (deliveryDistance) {
+        payload.routes = deliveryDistance?.routes[0]?.legs[0];
+      }
+      this.dispatchAddAddress(payload);
+    },
     closeAddressForm() {
       this.isAddressFormVisible = false;
     },
-    confirmedAddress() {
+    confirmedAddress(address) {
+      this.addAddress(address);
       this.closeAddressForm();
       this.closeSelectMapsAddress();
     },
